@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - WiseNews</title>
+    <meta name="theme-color" content="#07111f">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+    <div class="site-background" aria-hidden="true">
+        <div class="bg-orb orb-one"></div>
+        <div class="bg-orb orb-two"></div>
+        <div class="bg-orb orb-three"></div>
+        <div class="bg-grid"></div>
+    </div>
+
+    <main class="login-shell">
+        <section class="login-card panel" data-reveal>
+            <aside class="login-side-card">
+                <div>
+                    <div class="login-brand">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="WiseNews logo" class="login-logo">
+                        <div>
+                            <div class="login-brand-title">WiseNews</div>
+                            <p>AI-powered news reading, with less noise.</p>
+                        </div>
+                    </div>
+
+                    <p class="eyebrow login-kicker">Trusted Reading Flow</p>
+                    <h1>Sharper news decisions start here.</h1>
+                    <p class="section-lead login-lead">
+                        Sign in to analyze credibility, compare tone, and generate article summaries from the same workspace.
+                    </p>
+                </div>
+
+                <div class="login-highlights">
+                    <div class="login-highlight">
+                        <strong>Credibility scoring</strong>
+                        <p>See content, source, tone, and headline signals in one breakdown.</p>
+                    </div>
+                    <div class="login-highlight">
+                        <strong>Readable summaries</strong>
+                        <p>Shorten long articles into a cleaner snapshot before you dive deeper.</p>
+                    </div>
+                    <div class="login-highlight">
+                        <strong>Fast switching</strong>
+                        <p>Move between sign in and sign up without leaving the card or reloading the page.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="login-form-panel">
+                <div class="login-form-copy">
+                    <p class="eyebrow">Account Access</p>
+                    <h2 id="authHeading">Welcome back</h2>
+                    <p id="authSubtitle">Sign in to continue your credibility analysis workflow.</p>
+                </div>
+
+                <div class="auth-switcher">
+                    <button type="button" class="switch-btn active" data-mode="login">Sign In</button>
+                    <button type="button" class="switch-btn" data-mode="signup">Sign Up</button>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <form id="authForm" class="input-form login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" placeholder="Choose or enter your username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <div class="helper-text" id="passwordHint">Use your existing account password.</div>
+                    </div>
+
+                    <div class="form-group hidden" id="confirmGroup">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-inline" id="submitButton">
+                        <span class="btn-text" id="submitText">Sign In</span>
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+
+                <div class="login-footer" id="footerText">Experience intelligent news analysis in a cleaner interface.</div>
+            </section>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        const authUI = window.WiseNewsUI;
+        const authForm = document.getElementById("authForm");
+        const errorDiv = document.getElementById("errorMessage");
+        const successDiv = document.getElementById("successMessage");
+        const confirmGroup = document.getElementById("confirmGroup");
+        const confirmPassword = document.getElementById("confirmPassword");
+        const submitText = document.getElementById("submitText");
+        const submitButton = document.getElementById("submitButton");
+        const authHeading = document.getElementById("authHeading");
+        const subtitle = document.getElementById("authSubtitle");
+        const footerText = document.getElementById("footerText");
+        const passwordHint = document.getElementById("passwordHint");
+        const switchButtons = document.querySelectorAll(".switch-btn");
+
+        let authMode = "login";
+
+        function clearMessages() {
+            errorDiv.style.display = "none";
+            successDiv.style.display = "none";
+            errorDiv.textContent = "";
+            successDiv.textContent = "";
+        }
+
+        function setMode(mode) {
+            authMode = mode;
+            const isSignup = mode === "signup";
+
+            switchButtons.forEach((button) => {
+                button.classList.toggle("active", button.dataset.mode === mode);
+            });
+
+            confirmGroup.classList.toggle("hidden", !isSignup);
+            confirmPassword.required = isSignup;
+            authHeading.textContent = isSignup ? "Create your account" : "Welcome back";
+            submitText.textContent = isSignup ? "Create Account" : "Sign In";
+            subtitle.textContent = isSignup
+                ? "Create an account and start analyzing articles right away."
+                : "Sign in to continue your credibility analysis workflow.";
+            footerText.textContent = isSignup
+                ? "Accounts are created instantly inside this app session."
+                : "Experience intelligent news analysis in a cleaner interface.";
+            passwordHint.textContent = isSignup
+                ? "Use at least 6 characters for your new password."
+                : "Use your existing account password.";
+
+            clearMessages();
+        }
+
+        switchButtons.forEach((button) => {
+            button.addEventListener("click", () => setMode(button.dataset.mode));
+        });
+
+        authForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+            const confirm = confirmPassword.value;
+            const endpoint = authMode === "signup" ? "/signup" : "/login";
+            const payload = { username, password };
+
+            clearMessages();
+
+            if (authMode === "signup") {
+                payload.confirm_password = confirm;
+            }
+
+            authUI.setButtonLoading(submitButton, true);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || "Authentication failed");
+                }
+
+                if (authMode === "signup") {
+                    successDiv.textContent = "Account created successfully. Redirecting...";
+                    successDiv.style.display = "block";
+                }
+
+                window.location.href = data.redirect;
+            } catch (error) {
+                errorDiv.textContent = error.message || "Network error. Please try again.";
+                errorDiv.style.display = "block";
+            } finally {
+                authUI.setButtonLoading(submitButton, false);
+            }
+        });
+    </script>
+</body>
+</html>

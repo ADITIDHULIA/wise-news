@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}News Summarizer - WiseNews{% endblock %}
+
+{% block content %}
+<div class="page-shell tool-shell">
+    <section class="tool-hero panel" data-reveal>
+        <div>
+            <p class="eyebrow">Summary Studio</p>
+            <h1>Compress long articles without losing the thread.</h1>
+            <p class="section-lead">
+                Generate cleaner article summaries, compare the result beside the original preview, and move into credibility analysis when you need a deeper read.
+            </p>
+        </div>
+
+        <div class="tool-badges">
+            <span class="metric-pill">URL or pasted text</span>
+            <span class="metric-pill">Compression metrics</span>
+            <span class="metric-pill">Side-by-side comparison</span>
+        </div>
+    </section>
+
+    <section class="tool-layout">
+        <article class="tool-panel" data-reveal>
+            <div class="panel-heading">
+                <h2>Bring in an article</h2>
+                <p>Use a link for extraction or paste the article when you want full control.</p>
+            </div>
+
+            <div class="input-tabs" role="tablist" aria-label="Summarizer input options">
+                <button class="tab-btn active" type="button" data-tab="url" aria-selected="true">URL Input</button>
+                <button class="tab-btn" type="button" data-tab="text" aria-selected="false">Text Input</button>
+            </div>
+
+            <div class="tab-stack">
+                <div class="tab-content active" id="url-tab">
+                    <form id="urlForm" class="input-form">
+                        <div class="form-group">
+                            <label for="articleUrl">Article URL</label>
+                            <input type="url" id="articleUrl" name="url" placeholder="https://example.com/article" required>
+                            <small>WiseNews will pull the article text and summarize it for you.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-inline">
+                            <span class="btn-text">Generate summary</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="tab-content" id="text-tab">
+                    <form id="textForm" class="input-form">
+                        <div class="form-group">
+                            <label for="articleTitle">Headline</label>
+                            <input type="text" id="articleTitle" name="title" placeholder="Enter the article headline" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="articleText">Article text</label>
+                            <textarea id="articleText" name="text" placeholder="Paste the article text here..." rows="10" required></textarea>
+                            <small>Longer text gives the summarizer more context to work with.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-inline">
+                            <span class="btn-text">Generate summary</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </article>
+
+        <article class="tool-panel" data-reveal>
+            <div class="panel-heading">
+                <h2>Summary output</h2>
+                <p>Once generated, your summary and compression stats will appear here with a smoother reveal.</p>
+            </div>
+
+            <div class="empty-state ui-panel is-visible" id="emptyState">
+                <div class="state-icon">SUM</div>
+                <h3>Waiting for an article</h3>
+                <p>Generate a summary to reveal the condensed version, word counts, and side-by-side preview.</p>
+            </div>
+
+            <div class="loading-state ui-panel is-hidden" id="loadingState" hidden>
+                <div class="spinner" aria-hidden="true"></div>
+                <h3>Generating summary</h3>
+                <p>Condensing the article with an abstractive summarization model.</p>
+            </div>
+
+            <div class="results-section ui-panel is-hidden" id="resultsSection" hidden>
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <div>
+                            <h2 id="summaryTitle">Article Summary</h2>
+                            <p id="summarySubtitle">A concise version of the article will appear here.</p>
+                        </div>
+
+                        <div class="summary-stats">
+                            <div class="summary-stat">
+                                <span class="helper-text">Original</span>
+                                <strong id="originalLength">0</strong>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="helper-text">Summary</span>
+                                <strong id="summaryLength">0</strong>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="helper-text">Compression</span>
+                                <strong id="compression">0%</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-box">
+                        <p id="summaryText">Summary output will appear here.</p>
+                    </div>
+                </div>
+
+                <div class="summary-callout">
+                    <div class="state-icon">AI</div>
+                    <div>
+                        <strong>Model-generated summary</strong>
+                        <p>The summary is rewritten for brevity, so it should be used as a quick reading aid rather than a perfect substitute for the original article.</p>
+                    </div>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <div class="comparison-header">Original preview</div>
+                        <div class="comparison-content">
+                            <p id="originalPreview">The article preview will appear here.</p>
+                        </div>
+                    </div>
+
+                    <div class="comparison-item">
+                        <div class="comparison-header">Summary</div>
+                        <div class="comparison-content">
+                            <p id="summaryComparison">The summarized version will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="newSummaryBtn" type="button">&larr; Summarize another article</button>
+                    <a href="{{ url_for('analyzer') }}" class="btn btn-primary">Open analyzer &rarr;</a>
+                </div>
+            </div>
+        </article>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const summarizerUI = window.WiseNewsUI;
+    const summarizerTabs = document.querySelectorAll(".tab-btn");
+    const summarizerPanels = document.querySelectorAll(".tab-content");
+    const summaryUrlForm = document.getElementById("urlForm");
+    const summaryTextForm = document.getElementById("textForm");
+    const summaryResults = document.getElementById("resultsSection");
+    const summaryLoading = document.getElementById("loadingState");
+    const summaryEmpty = document.getElementById("emptyState");
+    const summaryError = document.getElementById("errorMessage");
+
+    function setActiveTab(tabName) {
+        summarizerTabs.forEach((button) => {
+            const isActive = button.dataset.tab === tabName;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-selected", String(isActive));
+        });
+
+        summarizerPanels.forEach((panel) => {
+            panel.classList.toggle("active", panel.id === `${tabName}-tab`);
+        });
+    }
+
+    function showError(message) {
+        summaryError.textContent = message;
+        summaryError.style.display = "block";
+    }
+
+    function clearError() {
+        summaryError.style.display = "none";
+        summaryError.textContent = "";
+    }
+
+    function resetSummaryExperience() {
+        summaryUrlForm.reset();
+        summaryTextForm.reset();
+        clearError();
+        summarizerUI.hidePanel(summaryResults);
+        summarizerUI.hidePanel(summaryLoading);
+        window.setTimeout(() => {
+            summarizerUI.showPanel(summaryEmpty, { display: "flex" });
+        }, 80);
+    }
+
+    function displayResults(data) {
+        const title = data.title || "Article Summary";
+        const summary = data.summary || "No summary generated.";
+        const originalLength = Number(data.original_length || 0);
+        const summaryLength = Number(data.summary_length || 0);
+        const compressionRatio = originalLength > 0
+            ? Math.max(0, Math.round((1 - (summaryLength / originalLength)) * 100))
+            : 0;
+        const preview = data.preview || "Preview unavailable for this article.";
+
+        document.getElementById("summaryTitle").textContent = title;
+        document.getElementById("summarySubtitle").textContent = "Your generated article summary is ready.";
+        document.getElementById("summaryText").textContent = summary;
+        document.getElementById("summaryComparison").textContent = summary;
+        document.getElementById("originalPreview").textContent = preview;
+
+        summarizerUI.animateValue(document.getElementById("originalLength"), 0, originalLength, { duration: 850 });
+        summarizerUI.animateValue(document.getElementById("summaryLength"), 0, summaryLength, { duration: 850 });
+        summarizerUI.animateValue(document.getElementById("compression"), 0, compressionRatio, {
+            duration: 900,
+            suffix: "%",
+            formatter: (value) => Math.round(value).toString()
+        });
+    }
+
+    async function summarizeArticle(type, data, form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        clearError();
+        summarizerUI.setButtonLoading(submitButton, true);
+        summarizerUI.hidePanel(summaryResults);
+        summarizerUI.hidePanel(summaryEmpty);
+        summarizerUI.showPanel(summaryLoading, { display: "flex" });
+
+        try {
+            const response = await fetch("/api/summarize", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    input_type: type,
+                    ...data
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || "Summarization failed");
+            }
+
+            displayResults(result.data || {});
+            summarizerUI.hidePanel(summaryLoading);
+
+            window.setTimeout(() => {
+                summarizerUI.showPanel(summaryResults, { display: "grid" });
+                summarizerUI.scrollIntoView(summaryResults);
+            }, 120);
+        } catch (error) {
+            summarizerUI.hidePanel(summaryLoading);
+            window.setTimeout(() => {
+                summarizerUI.showPanel(summaryEmpty, { display: "flex" });
+            }, 120);
+            showError(error.message || "Network error. Please try again.");
+        } finally {
+            summarizerUI.setButtonLoading(submitButton, false);
+        }
+    }
+
+    summarizerTabs.forEach((button) => {
+        button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+    });
+
+    summaryUrlForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await summarizeArticle("url", {
+            url: document.getElementById("articleUrl").value
+        }, summaryUrlForm);
+    });
+
+    summaryTextForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await summarizeArticle("text", {
+            title: document.getElementById("articleTitle").value,
+            text: document.getElementById("articleText").value
+        }, summaryTextForm);
+    });
+
+    document.getElementById("newSummaryBtn").addEventListener("click", resetSummaryExperience);
+</script>
+{% endblock %}

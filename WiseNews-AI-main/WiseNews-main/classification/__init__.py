@@ -1,0 +1,1 @@
+from .credibility_classifier import predict_credibility

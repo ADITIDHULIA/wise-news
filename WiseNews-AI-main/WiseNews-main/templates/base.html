@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WiseNews{% endblock %}</title>
+    <meta name="theme-color" content="#07111f">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="app-shell">
+    <div class="site-background" aria-hidden="true">
+        <div class="bg-orb orb-one"></div>
+        <div class="bg-orb orb-two"></div>
+        <div class="bg-orb orb-three"></div>
+        <div class="bg-grid"></div>
+    </div>
+
+    <div class="page-layer">
+        {% if user %}
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="WiseNews logo" class="logo-icon">
+                    <a href="{{ url_for('index') }}" class="logo-text">WiseNews</a>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                    <li><a href="{{ url_for('analyzer') }}" class="nav-link {% if request.endpoint == 'analyzer' %}active{% endif %}">Analyze</a></li>
+                    <li><a href="{{ url_for('summarizer') }}" class="nav-link {% if request.endpoint == 'summarizer' %}active{% endif %}">Summarize</a></li>
+                    <li class="nav-user">
+                        <span class="user-name">{{ user }}</span>
+                        <a href="{{ url_for('logout') }}" class="nav-link logout-btn">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        {% endif %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 WiseNews. Credibility scoring and summarization in one calmer workspace.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}News Analyzer - WiseNews{% endblock %}
+
+{% block content %}
+<div class="page-shell tool-shell">
+    <section class="tool-hero panel" data-reveal>
+        <div>
+            <p class="eyebrow">Credibility Intelligence</p>
+            <h1>Stress-test any article in seconds.</h1>
+            <p class="section-lead">
+                Drop in a news URL or paste the article manually to see a clearer credibility picture with animated scoring and a factor-by-factor breakdown.
+            </p>
+        </div>
+
+        <div class="tool-badges">
+            <span class="metric-pill">0 to 100 credibility score</span>
+            <span class="metric-pill">Five scoring factors</span>
+            <span class="metric-pill">Live visual breakdown</span>
+        </div>
+    </section>
+
+    <section class="tool-layout">
+        <article class="tool-panel" data-reveal>
+            <div class="panel-heading">
+                <h2>Choose your input</h2>
+                <p>Switch between article links and raw text without leaving the page.</p>
+            </div>
+
+            <div class="input-tabs" role="tablist" aria-label="Analyzer input options">
+                <button class="tab-btn active" type="button" data-tab="url" aria-selected="true">URL Input</button>
+                <button class="tab-btn" type="button" data-tab="text" aria-selected="false">Text Input</button>
+            </div>
+
+            <div class="tab-stack">
+                <div class="tab-content active" id="url-tab">
+                    <form id="urlForm" class="input-form">
+                        <div class="form-group">
+                            <label for="articleUrl">Article URL</label>
+                            <input type="url" id="articleUrl" name="url" placeholder="https://example.com/article" required>
+                            <small>Paste the URL of the article you want to inspect.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-inline">
+                            <span class="btn-text">Analyze article</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="tab-content" id="text-tab">
+                    <form id="textForm" class="input-form">
+                        <div class="form-group">
+                            <label for="articleTitle">Headline</label>
+                            <input type="text" id="articleTitle" name="title" placeholder="Enter the article headline" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="articleText">Article text</label>
+                            <textarea id="articleText" name="text" placeholder="Paste the article text here..." rows="10" required></textarea>
+                            <small>Longer text produces a more reliable breakdown.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-inline">
+                            <span class="btn-text">Analyze article</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </article>
+
+        <article class="tool-panel" data-reveal>
+            <div class="panel-heading">
+                <h2>Results</h2>
+                <p>Your score, credibility tier, and the signals contributing to it will appear here.</p>
+            </div>
+
+            <div class="empty-state ui-panel is-visible" id="emptyState">
+                <div class="state-icon">AI</div>
+                <h3>Ready when you are</h3>
+                <p>Run an analysis to reveal the score card, credibility tier, and factor breakdown.</p>
+            </div>
+
+            <div class="loading-state ui-panel is-hidden" id="loadingState" hidden>
+                <div class="spinner" aria-hidden="true"></div>
+                <h3>Analyzing credibility</h3>
+                <p>Combining model output, tone detection, and source-aware heuristics.</p>
+            </div>
+
+            <div class="results-section ui-panel is-hidden" id="resultsSection" hidden>
+                <div class="score-card">
+                    <div class="score-circle">
+                        <canvas id="scoreChart"></canvas>
+                        <div class="score-text">
+                            <div>
+                                <div class="score-value" id="scoreValue">0</div>
+                                <div class="score-label">out of 100</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="score-info">
+                        <h2 id="scoreTier">Credibility tier</h2>
+                        <p id="scoreDescription">We will summarize the article's credibility standing here.</p>
+                        <div class="score-tier-badge" id="tierBadge"></div>
+                    </div>
+                </div>
+
+                <div class="breakdown-grid">
+                    <div class="breakdown-item">
+                        <div class="breakdown-header">
+                            <span class="breakdown-title">Content quality</span>
+                            <span class="breakdown-score" id="contentScore">0/50</span>
+                        </div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill" id="contentFill"></div>
+                        </div>
+                        <p class="breakdown-desc">RoBERTa-based assessment of the article's overall credibility signals.</p>
+                    </div>
+
+                    <div class="breakdown-item">
+                        <div class="breakdown-header">
+                            <span class="breakdown-title">Source credibility</span>
+                            <span class="breakdown-score" id="sourceScore">0/25</span>
+                        </div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill" id="sourceFill"></div>
+                        </div>
+                        <p class="breakdown-desc">Estimated trustworthiness based on the source behind the article.</p>
+                    </div>
+
+                    <div class="breakdown-item">
+                        <div class="breakdown-header">
+                            <span class="breakdown-title">Content completeness</span>
+                            <span class="breakdown-score" id="completenessScore">0/5</span>
+                        </div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill" id="completenessFill"></div>
+                        </div>
+                        <p class="breakdown-desc">Checks for detail density such as sources, dates, and named entities.</p>
+                    </div>
+
+                    <div class="breakdown-item">
+                        <div class="breakdown-header">
+                            <span class="breakdown-title">Emotional tone</span>
+                            <span class="breakdown-score" id="emotionScore">0/10</span>
+                        </div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill" id="emotionFill"></div>
+                        </div>
+                        <p class="breakdown-desc">Measures sensationalism and emotionally loaded language.</p>
+                    </div>
+
+                    <div class="breakdown-item">
+                        <div class="breakdown-header">
+                            <span class="breakdown-title">Headline quality</span>
+                            <span class="breakdown-score" id="headlineScore">0/10</span>
+                        </div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill" id="headlineFill"></div>
+                        </div>
+                        <p class="breakdown-desc">Looks for clickbait patterns or headline mismatch risk.</p>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="newAnalysisBtn" type="button">&larr; Analyze another article</button>
+                    <a href="{{ url_for('summarizer') }}" class="btn btn-primary">Open summarizer &rarr;</a>
+                </div>
+            </div>
+        </article>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const analyzerUI = window.WiseNewsUI;
+    const analyzerTabs = document.querySelectorAll(".tab-btn");
+    const analyzerPanels = document.querySelectorAll(".tab-content");
+    const urlForm = document.getElementById("urlForm");
+    const textForm = document.getElementById("textForm");
+    const resultsSection = document.getElementById("resultsSection");
+    const loadingState = document.getElementById("loadingState");
+    const emptyState = document.getElementById("emptyState");
+    const errorMessage = document.getElementById("errorMessage");
+    let currentChart = null;
+
+    function setActiveTab(tabName) {
+        analyzerTabs.forEach((button) => {
+            const isActive = button.dataset.tab === tabName;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-selected", String(isActive));
+        });
+
+        analyzerPanels.forEach((panel) => {
+            panel.classList.toggle("active", panel.id === `${tabName}-tab`);
+        });
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+    }
+
+    function clearError() {
+        errorMessage.style.display = "none";
+        errorMessage.textContent = "";
+    }
+
+    function resetExperience() {
+        urlForm.reset();
+        textForm.reset();
+        clearError();
+        analyzerUI.hidePanel(resultsSection);
+        analyzerUI.hidePanel(loadingState);
+        window.setTimeout(() => {
+            analyzerUI.showPanel(emptyState, { display: "flex" });
+        }, 80);
+    }
+
+    function getTierLabel(score) {
+        if (score >= 80) {
+            return "High credibility";
+        }
+        if (score >= 60) {
+            return "Moderate credibility";
+        }
+        if (score >= 40) {
+            return "Low credibility";
+        }
+        return "Very low credibility";
+    }
+
+    function getTierDescription(score) {
+        if (score >= 80) {
+            return "This article looks strong across most credibility signals.";
+        }
+        if (score >= 60) {
+            return "This article is plausible, but a few trust signals deserve a second look.";
+        }
+        if (score >= 40) {
+            return "This article raises noticeable credibility concerns.";
+        }
+        return "This article should be treated with substantial skepticism.";
+    }
+
+    function getTierClass(score) {
+        if (score >= 80) {
+            return "tier-high";
+        }
+        if (score >= 60) {
+            return "tier-moderate";
+        }
+        if (score >= 40) {
+            return "tier-low";
+        }
+        return "tier-very-low";
+    }
+
+    function getTierColor(score) {
+        if (score >= 80) {
+            return "#33d17a";
+        }
+        if (score >= 60) {
+            return "#f3b54a";
+        }
+        if (score >= 40) {
+            return "#ff8e6d";
+        }
+        return "#ff6a70";
+    }
+
+    function updateBreakdown(name, value, max) {
+        const rounded = Math.round(value);
+        const percentage = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+        document.getElementById(`${name}Score`).textContent = `${rounded}/${max}`;
+
+        const fill = document.getElementById(`${name}Fill`);
+        fill.style.width = "0%";
+
+        requestAnimationFrame(() => {
+            fill.style.width = `${percentage}%`;
+        });
+    }
+
+    function updateChart(score) {
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
+        currentChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                datasets: [{
+                    data: [score, 100 - score],
+                    backgroundColor: [getTierColor(score), "rgba(153, 187, 227, 0.12)"],
+                    borderWidth: 0,
+                    hoverOffset: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: "74%",
+                animation: {
+                    duration: 950,
+                    easing: "easeOutQuart"
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                }
+            }
+        });
+    }
+
+    function displayResults(data) {
+        const score = Math.round(data.score || 0);
+        const factors = data.factors || {};
+        const scoreValue = document.getElementById("scoreValue");
+        const scoreTier = document.getElementById("scoreTier");
+        const scoreDescription = document.getElementById("scoreDescription");
+        const tierBadge = document.getElementById("tierBadge");
+
+        scoreValue.textContent = "0";
+        scoreValue.style.color = getTierColor(score);
+        analyzerUI.animateValue(scoreValue, 0, score, { duration: 950 });
+
+        scoreTier.textContent = getTierLabel(score);
+        scoreDescription.textContent = getTierDescription(score);
+        tierBadge.className = `score-tier-badge ${getTierClass(score)}`;
+        tierBadge.textContent = getTierLabel(score);
+
+        updateBreakdown("content", factors.content || 0, 50);
+        updateBreakdown("source", factors.source || 0, 25);
+        updateBreakdown("completeness", factors.completeness || 0, 5);
+        updateBreakdown("emotion", factors.emotion || 0, 10);
+        updateBreakdown("headline", factors.headline || 0, 10);
+        updateChart(score);
+    }
+
+    async function analyzeArticle(type, data, form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        clearError();
+        analyzerUI.setButtonLoading(submitButton, true);
+        analyzerUI.hidePanel(resultsSection);
+        analyzerUI.hidePanel(emptyState);
+        analyzerUI.showPanel(loadingState, { display: "flex" });
+
+        try {
+            const response = await fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    input_type: type,
+                    ...data
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || "Analysis failed");
+            }
+
+            displayResults(result.data || {});
+            analyzerUI.hidePanel(loadingState);
+
+            window.setTimeout(() => {
+                analyzerUI.showPanel(resultsSection, { display: "grid" });
+                analyzerUI.scrollIntoView(resultsSection);
+            }, 120);
+        } catch (error) {
+            analyzerUI.hidePanel(loadingState);
+            window.setTimeout(() => {
+                analyzerUI.showPanel(emptyState, { display: "flex" });
+            }, 120);
+            showError(error.message || "Network error. Please try again.");
+        } finally {
+            analyzerUI.setButtonLoading(submitButton, false);
+        }
+    }
+
+    analyzerTabs.forEach((button) => {
+        button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+    });
+
+    urlForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await analyzeArticle("url", {
+            url: document.getElementById("articleUrl").value
+        }, urlForm);
+    });
+
+    textForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await analyzeArticle("text", {
+            title: document.getElementById("articleTitle").value,
+            text: document.getElementById("articleText").value
+        }, textForm);
+    });
+
+    document.getElementById("newAnalysisBtn").addEventListener("click", resetExperience);
+</script>
+{% endblock %}
